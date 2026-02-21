@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 from backend.models import init_db
-from backend.models import get_bnpl_records, insert_bnpl_record, clear_bnpl_records, get_user_salary, update_user_salary, get_user_profile, update_user_profile, update_bnpl_status, get_bnpl_record_by_id
+from backend.models import get_bnpl_records, insert_bnpl_record, clear_bnpl_records, get_user_salary, update_user_salary, get_user_profile, update_user_profile, update_bnpl_status, get_bnpl_record_by_id, is_gmail_message_processed
 from backend.finance import calculate_analysis, calculate_affordability
 from backend.gmail_service import create_flow, get_gmail_service, fetch_gmail_messages, get_user_email
 from flask import redirect, session, request
@@ -113,8 +113,9 @@ def user_profile():
 def sync_emails():
     """
     Fetch Gmail messages, parse BNPL data with STRICT filtering, and store in database.
+    Now with idempotent syncing - prevents duplicate records from re-processed emails.
     """
-    print("[Sync] Starting email sync with STRICT filtering...")
+    print("[Sync] Starting IDEMPOTENT email sync with STRICT filtering...")
     
     creds = get_credentials_from_session(session)
     
@@ -158,23 +159,29 @@ def sync_emails():
             "data": {
                 "synced_count": 0,
                 "bnpl_count": 0,
-                "filtered_count": 0
+                "filtered_count": 0,
+                "skipped_count": 0
             }
         })
     
-    print(f"[Sync] Processing {len(messages)} messages with STRICT filtering...")
+    print(f"[Sync] Processing {len(messages)} messages with IDEMPOTENT + STRICT filtering...")
     
-    # Clear existing records for this user
-    clear_bnpl_records(user_email)
-    
-    # Parse and store BNPL records with strict filtering
+    # Parse and store BNPL records with idempotent logic
     bnpl_count = 0
     filtered_count = 0
+    skipped_count = 0
     
     for msg in messages:
+        gmail_message_id = msg["id"]
         sender = msg["sender"]
         subject = msg["subject"]
         body = msg["body"]
+        
+        # IDEMPOTENT CHECK: Skip if already processed
+        if is_gmail_message_processed(user_email, gmail_message_id):
+            skipped_count += 1
+            print(f"[Sync] SKIPPED (already processed): {subject[:50]}... (Gmail ID: {gmail_message_id[:10]}...)")
+            continue
         
         # STRICT VALIDATION: Check if email is from valid financial sender
         if not is_bnpl_email(sender, subject, body):
@@ -187,33 +194,37 @@ def sync_emails():
         
         # Only store if we found amount (critical field)
         if parsed["amount"]:
-            try:
-                insert_bnpl_record(
-                    user_email=user_email,
-                    vendor=parsed["vendor"],
-                    amount=parsed["amount"],
-                    installments=parsed["installments"] or 1,
-                    due_date=parsed["due_date"],
-                    email_subject=subject
-                )
+            # Insert with Gmail message ID for idempotent sync
+            success = insert_bnpl_record(
+                user_email=user_email,
+                gmail_message_id=gmail_message_id,
+                vendor=parsed["vendor"],
+                amount=parsed["amount"],
+                installments=parsed["installments"] or 1,
+                due_date=parsed["due_date"],
+                email_subject=subject
+            )
+            
+            if success:
                 bnpl_count += 1
-                print(f"[Sync] ✓ Stored: {parsed['vendor']} - ₹{parsed['amount']} ({parsed['installments']} EMI) Due: {parsed['due_date']}")
-            except Exception as e:
-                print(f"[Sync] ERROR storing record: {e}")
-                continue
+                print(f"[Sync] ✓ Stored: {parsed['vendor']} - ₹{parsed['amount']} ({parsed['installments']} EMI) Due: {parsed['due_date']} (Gmail ID: {gmail_message_id[:10]}...)")
+            else:
+                skipped_count += 1
+                print(f"[Sync] SKIPPED (duplicate): {subject[:50]}... (Gmail ID: {gmail_message_id[:10]}...)")
         else:
             filtered_count += 1
             print(f"[Sync] FILTERED OUT: {subject[:50]}... (no valid amount found)")
     
-    print(f"[Sync] Complete! Stored {bnpl_count} valid BNPL records, filtered out {filtered_count} non-financial emails")
+    print(f"[Sync] Complete! Stored {bnpl_count} new BNPL records, skipped {skipped_count} already processed, filtered out {filtered_count} non-financial emails")
     
     return jsonify({
         "success": True,
-        "message": f"Successfully synced {bnpl_count} BNPL transactions from {len(messages)} emails. Filtered out {filtered_count} non-financial emails.",
+        "message": f"Successfully synced {bnpl_count} new BNPL transactions from {len(messages)} emails. Skipped {skipped_count} already processed, filtered out {filtered_count} non-financial emails.",
         "data": {
             "synced_count": len(messages),
             "bnpl_count": bnpl_count,
-            "filtered_count": filtered_count
+            "filtered_count": filtered_count,
+            "skipped_count": skipped_count
         }
     })
 

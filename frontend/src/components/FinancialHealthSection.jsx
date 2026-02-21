@@ -8,243 +8,267 @@ function FinancialHealthSection({ profile, riskData, onProfileUpdate }) {
 
   const monthlyObligation = riskData?.monthly_obligation || 0
   
-  // Calculate simulated values
   const simulatedDisposable = simulatedSalary - (simulatedRent + simulatedExpenses + monthlyObligation)
   const simulatedSavingsRatio = simulatedSalary > 0 ? (simulatedDisposable / simulatedSalary * 100) : 0
   const simulatedDebtRatio = simulatedSalary > 0 ? (monthlyObligation / simulatedSalary * 100) : 0
 
-  const getHealthColor = (value) => {
-    if (value >= 20) return 'text-green-400'
-    if (value >= 10) return 'text-yellow-400'
-    return 'text-red-400'
+  const getStatusColor = (value, thresholds) => {
+    if (value >= thresholds.good) return { text: '#22C55E', label: 'Excellent' }
+    if (value >= thresholds.ok) return { text: '#F59E0B', label: 'Moderate' }
+    return { text: '#DC2626', label: 'Critical' }
   }
 
-  const getHealthBg = (value) => {
-    if (value >= 20) return 'from-green-500/10 to-emerald-600/10 border-green-500/30'
-    if (value >= 10) return 'from-yellow-500/10 to-orange-600/10 border-yellow-500/30'
-    return 'from-red-500/10 to-rose-600/10 border-red-500/30'
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
     >
-      {/* Current Financial Profile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 backdrop-blur-lg rounded-2xl p-6 border border-blue-500/30"
-        >
-          <p className="text-gray-400 text-sm mb-2">Monthly Salary</p>
-          <p className="text-3xl font-bold text-blue-400">₹{simulatedSalary.toLocaleString()}</p>
-          <p className="text-xs text-gray-500 mt-2">Current income</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/30"
-        >
-          <p className="text-gray-400 text-sm mb-2">Fixed Expenses</p>
-          <p className="text-3xl font-bold text-purple-400">₹{(simulatedRent + simulatedExpenses).toLocaleString()}</p>
-          <p className="text-xs text-gray-500 mt-2">Rent + Other</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className={`bg-gradient-to-br ${getHealthBg(simulatedDisposable)} backdrop-blur-lg rounded-2xl p-6 border`}
-        >
-          <p className="text-gray-400 text-sm mb-2">Disposable Income</p>
-          <p className={`text-3xl font-bold ${getHealthColor(simulatedDisposable)}`}>
-            ₹{Math.max(0, simulatedDisposable).toLocaleString()}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">After all expenses</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className={`bg-gradient-to-br ${getHealthBg(simulatedSavingsRatio)} backdrop-blur-lg rounded-2xl p-6 border`}
-        >
-          <p className="text-gray-400 text-sm mb-2">Savings Ratio</p>
-          <p className={`text-3xl font-bold ${getHealthColor(simulatedSavingsRatio)}`}>
-            {simulatedSavingsRatio.toFixed(1)}%
-          </p>
-          <p className="text-xs text-gray-500 mt-2">Of monthly income</p>
-        </motion.div>
+      {/* Financial Snapshot */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Monthly Salary',
+            value: simulatedSalary,
+            color: '#D4AF37',
+            icon: '💰'
+          },
+          {
+            label: 'Fixed Expenses',
+            value: simulatedRent + simulatedExpenses,
+            color: '#A1A1AA',
+            icon: '🏠'
+          },
+          {
+            label: 'BNPL Obligation',
+            value: monthlyObligation,
+            color: monthlyObligation > simulatedSalary * 0.3 ? '#DC2626' : '#F59E0B',
+            icon: '📋'
+          },
+          {
+            label: 'Disposable Income',
+            value: Math.max(0, simulatedDisposable),
+            color: simulatedDisposable > 10000 ? '#22C55E' : simulatedDisposable > 0 ? '#F59E0B' : '#DC2626',
+            icon: '🎯'
+          }
+        ].map((item, idx) => (
+          <motion.div
+            key={idx}
+            variants={itemVariants}
+            className="luxury-card p-6 border-[rgba(212,175,55,0.2)] space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[#A1A1AA] text-xs uppercase tracking-widest">{item.label}</p>
+              <span className="text-xl">{item.icon}</span>
+            </div>
+            <p 
+              className="text-2xl font-bold"
+              style={{ color: item.color }}
+            >
+              ₹{item.value.toLocaleString()}
+            </p>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Interactive Sliders */}
+      {/* Gold Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.2)] to-transparent"></div>
+
+      {/* Financial Simulator */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+        variants={itemVariants}
+        className="luxury-card p-8 border-[rgba(212,175,55,0.2)] space-y-8"
       >
-        <h3 className="text-2xl font-bold text-white mb-8">💡 Financial Simulator</h3>
-        <p className="text-gray-400 text-sm mb-6">Adjust your financial parameters to see impact on your financial health</p>
-
-        {/* Salary Slider */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-white font-semibold">Monthly Salary</label>
-            <span className="text-2xl font-bold text-blue-400">₹{simulatedSalary.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            min="10000"
-            max="200000"
-            step="5000"
-            value={simulatedSalary}
-            onChange={(e) => setSimulatedSalary(Number(e.target.value))}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>₹10,000</span>
-            <span>₹200,000</span>
-          </div>
+        <div>
+          <h3 className="text-2xl font-bold text-[#F5F5F5] mb-2">Financial Simulator</h3>
+          <p className="text-[#A1A1AA] text-sm">Adjust parameters to model different scenarios</p>
         </div>
 
-        {/* Rent Slider */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-white font-semibold">Monthly Rent</label>
-            <span className="text-2xl font-bold text-purple-400">₹{simulatedRent.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="50000"
-            step="1000"
-            value={simulatedRent}
-            onChange={(e) => setSimulatedRent(Number(e.target.value))}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>₹0</span>
-            <span>₹50,000</span>
-          </div>
-        </div>
+        {/* Sliders */}
+        <div className="space-y-8">
+          {[
+            {
+              label: 'Monthly Salary',
+              value: simulatedSalary,
+              onChange: setSimulatedSalary,
+              min: 10000,
+              max: 200000,
+              step: 5000,
+              color: '#D4AF37'
+            },
+            {
+              label: 'Monthly Rent',
+              value: simulatedRent,
+              onChange: setSimulatedRent,
+              min: 0,
+              max: 50000,
+              step: 1000,
+              color: '#8B5CF6'
+            },
+            {
+              label: 'Other Expenses',
+              value: simulatedExpenses,
+              onChange: setSimulatedExpenses,
+              min: 0,
+              max: 50000,
+              step: 1000,
+              color: '#F59E0B'
+            }
+          ].map((slider, idx) => (
+            <div key={idx}>
+              <div className="flex justify-between items-end mb-3">
+                <label className="text-[#F5F5F5] font-medium text-sm">{slider.label}</label>
+                <span 
+                  className="text-xl font-semibold"
+                  style={{ color: slider.color }}
+                >
+                  ₹{slider.value.toLocaleString()}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={slider.min}
+                max={slider.max}
+                step={slider.step}
+                value={slider.value}
+                onChange={(e) => slider.onChange(Number(e.target.value))}
+                className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, ${slider.color} 0%, ${slider.color} ${(slider.value - slider.min) / (slider.max - slider.min) * 100}%, rgba(212,175,55,0.15) ${(slider.value - slider.min) / (slider.max - slider.min) * 100}%, rgba(212,175,55,0.15) 100%)`
+                }}
+              />
+              <div className="flex justify-between text-xs text-[#A1A1AA] mt-2">
+                <span>₹{slider.min.toLocaleString()}</span>
+                <span>₹{slider.max.toLocaleString()}</span>
+              </div>
+            </div>
+          ))}
 
-        {/* Other Expenses Slider */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-white font-semibold">Other Monthly Expenses</label>
-            <span className="text-2xl font-bold text-orange-400">₹{simulatedExpenses.toLocaleString()}</span>
+          {/* BNPL Obligation (Read-only) */}
+          <div className="p-4 bg-[#242424] border border-[rgba(212,175,55,0.15)] rounded">
+            <div className="flex justify-between items-center">
+              <label className="text-[#F5F5F5] font-medium text-sm">Monthly BNPL Obligation</label>
+              <span className="text-xl font-bold text-[#DC2626]">
+                ₹{monthlyObligation.toLocaleString()}
+              </span>
+            </div>
+            <p className="text-xs text-[#A1A1AA] mt-2">Auto-detected from your emails</p>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="50000"
-            step="1000"
-            value={simulatedExpenses}
-            onChange={(e) => setSimulatedExpenses(Number(e.target.value))}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>₹0</span>
-            <span>₹50,000</span>
-          </div>
-        </div>
-
-        {/* BNPL Obligation (Read-only) */}
-        <div className="mb-8 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-          <div className="flex justify-between items-center">
-            <label className="text-white font-semibold">Monthly BNPL Obligation</label>
-            <span className="text-2xl font-bold text-red-400">₹{monthlyObligation.toLocaleString()}</span>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">From your BNPL commitments (read-only)</p>
         </div>
       </motion.div>
 
       {/* Impact Analysis */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+        variants={itemVariants}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
-        <h3 className="text-2xl font-bold text-white mb-6">📈 Impact Analysis</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Debt Ratio */}
-          <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-700">
-            <p className="text-gray-400 text-sm mb-3">Debt-to-Income Ratio</p>
-            <p className={`text-4xl font-bold mb-2 ${simulatedDebtRatio > 40 ? 'text-red-400' : simulatedDebtRatio > 20 ? 'text-yellow-400' : 'text-green-400'}`}>
-              {simulatedDebtRatio.toFixed(1)}%
-            </p>
-            <p className="text-xs text-gray-500">
-              {simulatedDebtRatio > 40 ? '⚠️ High - Consider reducing BNPL' : simulatedDebtRatio > 20 ? '⚡ Moderate - Monitor closely' : '✅ Healthy - Good ratio'}
-            </p>
-          </div>
-
-          {/* Disposable Income */}
-          <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-700">
-            <p className="text-gray-400 text-sm mb-3">Disposable Income</p>
-            <p className={`text-4xl font-bold mb-2 ${simulatedDisposable < 0 ? 'text-red-400' : simulatedDisposable < 5000 ? 'text-yellow-400' : 'text-green-400'}`}>
-              ₹{Math.max(0, simulatedDisposable).toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-500">
-              {simulatedDisposable < 0 ? '🚨 Deficit - Expenses exceed income' : simulatedDisposable < 5000 ? '⚠️ Low - Limited buffer' : '✅ Healthy - Good cushion'}
-            </p>
-          </div>
-
-          {/* Savings Potential */}
-          <div className="bg-gray-900/50 rounded-lg p-6 border border-gray-700">
-            <p className="text-gray-400 text-sm mb-3">Savings Potential</p>
-            <p className={`text-4xl font-bold mb-2 ${simulatedSavingsRatio < 10 ? 'text-red-400' : simulatedSavingsRatio < 20 ? 'text-yellow-400' : 'text-green-400'}`}>
-              {simulatedSavingsRatio.toFixed(1)}%
-            </p>
-            <p className="text-xs text-gray-500">
-              {simulatedSavingsRatio < 10 ? '🚨 Very low - Increase income or reduce expenses' : simulatedSavingsRatio < 20 ? '⚠️ Below target - Aim for 20%+' : '✅ Excellent - On track'}
-            </p>
-          </div>
-        </div>
+        {[
+          {
+            title: 'Debt-to-Income',
+            value: simulatedDebtRatio.toFixed(1),
+            unit: '%',
+            thresholds: { good: 20, ok: 40 },
+            description: (value) => value > 40 ? 'High risk - reduce BNPL' : value > 20 ? 'Monitor closely' : 'Healthy ratio',
+            icon: '📊'
+          },
+          {
+            title: 'Disposable Income',
+            value: Math.max(0, simulatedDisposable),
+            unit: '₹',
+            thresholds: { good: 10000, ok: 5000 },
+            description: (value) => value < 0 ? 'Deficit alert' : value < 5000 ? 'Limited buffer' : 'Good cushion',
+            icon: '💸'
+          },
+          {
+            title: 'Savings Ratio',
+            value: simulatedSavingsRatio.toFixed(1),
+            unit: '%',
+            thresholds: { good: 20, ok: 10 },
+            description: (value) => value < 10 ? 'Below target' : value < 20 ? 'Moderate' : 'Excellent',
+            icon: '🏦'
+          }
+        ].map((metric, idx) => {
+          const status = metric.thresholds ? getStatusColor(parseFloat(metric.value), metric.thresholds) : {}
+          return (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              className="luxury-card p-6 border-[rgba(212,175,55,0.2)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-[#A1A1AA] text-xs uppercase tracking-wider font-medium">
+                  {metric.title}
+                </h4>
+                <span className="text-2xl">{metric.icon}</span>
+              </div>
+              <p 
+                className="text-3xl font-bold"
+                style={{ color: status.text }}
+              >
+                {metric.value}{metric.unit}
+              </p>
+              <p className="text-xs text-[#A1A1AA]">
+                {metric.description(parseFloat(metric.value))}
+              </p>
+            </motion.div>
+          )
+        })}
       </motion.div>
 
       {/* Recommendations */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="bg-gradient-to-br from-blue-500/10 to-purple-600/10 backdrop-blur-lg rounded-2xl p-8 border border-blue-500/30"
+        variants={itemVariants}
+        className="luxury-card p-8 space-y-4"
+        style={{ borderColor: 'rgba(212,175,55,0.2)' }}
       >
-        <h3 className="text-2xl font-bold text-white mb-4">💡 Recommendations</h3>
-        <ul className="space-y-3 text-gray-300">
+        <h3 className="text-lg font-bold text-[#D4AF37]">Financial Insights</h3>
+        <div className="space-y-3">
           {simulatedDebtRatio > 40 && (
-            <li className="flex items-start space-x-3">
-              <span className="text-red-400 mt-1">⚠️</span>
-              <span>Your debt-to-income ratio is high. Consider paying off BNPL commitments faster or reducing new purchases.</span>
-            </li>
+            <div className="flex gap-3 items-start p-3 rounded" style={{ backgroundColor: 'rgba(220,38,38,0.1)', borderColor: 'rgba(220,38,38,0.2)', borderWidth: '1px' }}>
+              <span className="text-lg">⚠️</span>
+              <span className="text-[#F5F5F5] text-sm">Your BNPL obligations are high relative to income. Consider prioritizing repayment.</span>
+            </div>
           )}
           {simulatedDisposable < 0 && (
-            <li className="flex items-start space-x-3">
-              <span className="text-red-400 mt-1">🚨</span>
-              <span>Your expenses exceed income. Reduce spending or increase income to avoid financial stress.</span>
-            </li>
+            <div className="flex gap-3 items-start p-3 rounded" style={{ backgroundColor: 'rgba(220,38,38,0.1)', borderColor: 'rgba(220,38,38,0.2)', borderWidth: '1px' }}>
+              <span className="text-lg">🚨</span>
+              <span className="text-[#F5F5F5] text-sm">Expenses exceed income. Adjust parameters or increase earnings to regain balance.</span>
+            </div>
           )}
           {simulatedSavingsRatio < 10 && (
-            <li className="flex items-start space-x-3">
-              <span className="text-yellow-400 mt-1">⚡</span>
-              <span>Your savings ratio is below 10%. Aim to save at least 20% of your income for emergencies.</span>
-            </li>
+            <div className="flex gap-3 items-start p-3 rounded" style={{ backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.2)', borderWidth: '1px' }}>
+              <span className="text-lg">⏱️</span>
+              <span className="text-[#F5F5F5] text-sm">Savings ratio is below target. Build an emergency fund of 3-6 months expenses.</span>
+            </div>
           )}
-          {simulatedDebtRatio <= 40 && simulatedDisposable >= 0 && simulatedSavingsRatio >= 10 && (
-            <li className="flex items-start space-x-3">
-              <span className="text-green-400 mt-1">✅</span>
-              <span>Your financial health looks good! Keep maintaining this balance and continue building your savings.</span>
-            </li>
+          {simulatedDebtRatio <= 40 && simulatedDisposable > 0 && simulatedSavingsRatio >= 10 && (
+            <div className="flex gap-3 items-start p-3 rounded" style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderColor: 'rgba(34,197,94,0.2)', borderWidth: '1px' }}>
+              <span className="text-lg">✅</span>
+              <span className="text-[#F5F5F5] text-sm">Your financial health is strong. Maintain this balance and continue building wealth.</span>
+            </div>
           )}
-        </ul>
+        </div>
       </motion.div>
     </motion.div>
   )

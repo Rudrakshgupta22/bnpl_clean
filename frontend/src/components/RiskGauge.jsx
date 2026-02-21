@@ -1,51 +1,103 @@
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { motion } from 'framer-motion'
 
 function RiskGauge({ score, level }) {
   const getRiskColor = (score) => {
-    if (score < 20) return '#10b981'
-    if (score < 50) return '#f59e0b'
-    return '#ef4444'
+    if (score < 20) return '#22C55E'      // Green - Safe
+    if (score < 50) return '#F59E0B'      // Amber - Caution
+    return '#DC2626'                       // Red - High Risk
   }
 
-  const data = [
-    { name: 'Risk', value: score },
-    { name: 'Safe', value: 100 - score }
-  ]
+  const getRiskLevelText = (score) => {
+    if (score < 20) return 'Excellent'
+    if (score < 50) return 'Moderate'
+    return 'High Risk'
+  }
 
   const color = getRiskColor(score)
+  const circumference = 2 * Math.PI * 45
+  const strokeDashoffset = circumference - (score / 100) * circumference
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            startAngle={180}
-            endAngle={0}
-            innerRadius={60}
-            outerRadius={90}
-            dataKey="value"
-            stroke="none"
+    <div className="flex flex-col items-center justify-center space-y-6">
+      {/* Circular Gauge */}
+      <div className="relative w-48 h-48">
+        {/* Background Circle */}
+        <svg
+          className="w-full h-full -rotate-90"
+          viewBox="0 0 120 120"
+        >
+          {/* Outer Border */}
+          <circle
+            cx="60"
+            cy="60"
+            r="55"
+            fill="none"
+            stroke="rgba(212, 175, 55, 0.1)"
+            strokeWidth="1"
+          />
+          
+          {/* Background Track */}
+          <circle
+            cx="60"
+            cy="60"
+            r="45"
+            fill="none"
+            stroke="rgba(212, 175, 55, 0.15)"
+            strokeWidth="8"
+          />
+          
+          {/* Animated Progress Track */}
+          <motion.circle
+            cx="60"
+            cy="60"
+            r="45"
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset }}
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Center Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="text-center"
           >
-            <Cell fill={color} />
-            <Cell fill="#e5e7eb" />
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-      
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        className="text-center mt-4"
-      >
-        <div className="text-4xl font-bold" style={{ color }}>
-          {score}
+            <div 
+              className="text-5xl font-bold"
+              style={{ color }}
+            >
+              {score}
+            </div>
+            <div className="text-xs text-[#A1A1AA] mt-1 tracking-widest uppercase">
+              Risk Score
+            </div>
+          </motion.div>
         </div>
-        <div className="text-sm text-gray-400 mt-1">{level} Risk</div>
+      </div>
+
+      {/* Status Text */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="text-center space-y-1"
+      >
+        <div className="text-lg font-semibold text-[#F5F5F5]">
+          {getRiskLevelText(score)}
+        </div>
+        <div className="text-sm text-[#A1A1AA]">
+          {score < 20 && 'Your BNPL obligations are well-managed'}
+          {score >= 20 && score < 50 && 'Monitor your BNPL commitments closely'}
+          {score >= 50 && 'Your debt obligations require immediate attention'}
+        </div>
       </motion.div>
     </div>
   )

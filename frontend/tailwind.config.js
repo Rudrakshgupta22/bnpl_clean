@@ -7,6 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Luxury Dark Gold Theme
+        gold: {
+          50: '#fef9f4',
+          100: '#fdf3e9',
+          200: '#fae8d3',
+          300: '#f5d9b3',
+          400: '#e8c17f',
+          500: '#D4AF37',
+          600: '#c19a2e',
+          700: '#a17d25',
+          800: '#81621f',
+          900: '#694c1a',
+        },
+        luxe: {
+          bg: '#121212',
+          card: '#1E1E1E',
+          border: 'rgba(212, 175, 55, 0.25)',
+        },
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',

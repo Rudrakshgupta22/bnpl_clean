@@ -15,41 +15,55 @@ function Sidebar({ activeSection, setActiveSection, onLogout }) {
     <motion.div
       initial={{ x: -250 }}
       animate={{ x: 0 }}
-      className="w-64 bg-gradient-to-b from-gray-900 to-gray-800 border-r border-white/10 h-screen flex flex-col"
+      className="w-64 bg-[#121212] border-r h-screen flex flex-col" style={{ borderColor: 'rgba(212,175,55,0.15)' }}
     >
-      {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          BNPL Guardian
-        </h1>
+      {/* Logo Section */}
+      <div className="p-6 border-b" style={{ borderColor: 'rgba(212,175,55,0.1)' }}>
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-xl font-bold text-[#D4AF37]">BNPL</h1>
+            <h1 className="text-xl font-bold text-[#F5F5F5]">Guardian</h1>
+          </div>
+          <p className="text-xs text-[#A1A1AA] tracking-widest uppercase">Financial Intelligence</p>
+        </div>
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-3 space-y-1">
         {menuItems.map((item) => (
           <motion.button
             key={item.id}
-            whileHover={{ x: 5 }}
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveSection(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-all duration-300 ${
               activeSection === item.id
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800'
+                ? 'bg-[#1E1E1E] text-[#D4AF37] border-l-2 border-[#D4AF37]'
+                : 'text-[#A1A1AA] hover:text-[#F5F5F5] hover:bg-[rgba(212,175,55,0.05)]'
             }`}
           >
-            <span className="text-xl">{item.icon}</span>
-            <span className="font-medium">{item.label}</span>
+            <span className="text-lg">{item.icon}</span>
+            <span className="font-medium text-sm">{item.label}</span>
+            {activeSection === item.id && (
+              <motion.div
+                layoutId="activeIndicator"
+                className="ml-auto w-1.5 h-1.5 rounded-full bg-[#D4AF37]"
+              />
+            )}
           </motion.button>
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10">
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.1)] to-transparent mx-4"></div>
+
+      {/* Logout Button */}
+      <div className="p-4">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onLogout}
-          className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all font-medium"
+          className="w-full px-4 py-2.5 bg-[#1E1E1E] hover:bg-[rgba(220,38,38,0.1)] text-[#DC2626] border border-[rgba(220,38,38,0.2)] rounded transition-all font-medium text-sm"
         >
           🚪 Logout
         </motion.button>

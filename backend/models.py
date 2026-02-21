@@ -10,21 +10,29 @@ def init_db():
         CREATE TABLE IF NOT EXISTS bnpl_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT,
+            gmail_message_id TEXT,
             vendor TEXT,
             amount REAL,
             installments INTEGER,
             due_date TEXT,
             email_subject TEXT,
             status TEXT DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_email, gmail_message_id)
         )
     """)
     
-    # Add status column if it doesn't exist (for existing databases)
+    # Add columns if they don't exist (for existing databases)
     cursor.execute("PRAGMA table_info(bnpl_records)")
     columns = [column[1] for column in cursor.fetchall()]
+    
     if 'status' not in columns:
         cursor.execute("ALTER TABLE bnpl_records ADD COLUMN status TEXT DEFAULT 'active'")
+    
+    if 'gmail_message_id' not in columns:
+        cursor.execute("ALTER TABLE bnpl_records ADD COLUMN gmail_message_id TEXT")
+        # Create unique constraint after adding column
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_gmail_msg ON bnpl_records(user_email, gmail_message_id)")
     
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -54,21 +62,21 @@ def get_bnpl_records(user_email=None, status_filter=None):
     if user_email:
         if status_filter:
             cursor.execute("""
-                SELECT id, vendor, amount, installments, due_date, email_subject, status, created_at 
+                SELECT id, gmail_message_id, vendor, amount, installments, due_date, email_subject, status, created_at 
                 FROM bnpl_records 
                 WHERE user_email = ? AND status = ?
                 ORDER BY created_at DESC
             """, (user_email, status_filter))
         else:
             cursor.execute("""
-                SELECT id, vendor, amount, installments, due_date, email_subject, status, created_at 
+                SELECT id, gmail_message_id, vendor, amount, installments, due_date, email_subject, status, created_at 
                 FROM bnpl_records 
                 WHERE user_email = ?
                 ORDER BY created_at DESC
             """, (user_email,))
     else:
         cursor.execute("""
-            SELECT id, vendor, amount, installments, due_date, email_subject, status, created_at 
+            SELECT id, gmail_message_id, vendor, amount, installments, due_date, email_subject, status, created_at 
             FROM bnpl_records 
             ORDER BY created_at DESC
         """)
@@ -79,28 +87,37 @@ def get_bnpl_records(user_email=None, status_filter=None):
     return [
         {
             "id": row[0],
-            "vendor": row[1],
-            "amount": row[2],
-            "installments": row[3],
-            "due_date": row[4],
-            "email_subject": row[5],
-            "status": row[6],
-            "created_at": row[7]
+            "gmail_message_id": row[1],
+            "vendor": row[2],
+            "amount": row[3],
+            "installments": row[4],
+            "due_date": row[5],
+            "email_subject": row[6],
+            "status": row[7],
+            "created_at": row[8]
         }
         for row in rows
     ]
 
-def insert_bnpl_record(user_email, vendor, amount, installments, due_date, email_subject):
+def insert_bnpl_record(user_email, gmail_message_id, vendor, amount, installments, due_date, email_subject):
+    """Insert BNPL record with Gmail message ID for idempotent sync"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    cursor.execute("""
-        INSERT INTO bnpl_records (user_email, vendor, amount, installments, due_date, email_subject)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (user_email, vendor, amount, installments, due_date, email_subject))
-    
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("""
+            INSERT INTO bnpl_records (user_email, gmail_message_id, vendor, amount, installments, due_date, email_subject)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user_email, gmail_message_id, vendor, amount, installments, due_date, email_subject))
+        
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError as e:
+        # Duplicate gmail_message_id for this user - skip
+        print(f"[DB] Skipping duplicate Gmail message {gmail_message_id} for user {user_email}")
+        return False
+    finally:
+        conn.close()
 
 def clear_bnpl_records(user_email):
     conn = sqlite3.connect(DB_PATH)
@@ -206,7 +223,7 @@ def get_bnpl_record_by_id(record_id):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT id, user_email, vendor, amount, installments, due_date, email_subject, status, created_at 
+        SELECT id, user_email, gmail_message_id, vendor, amount, installments, due_date, email_subject, status, created_at 
         FROM bnpl_records 
         WHERE id = ?
     """, (record_id,))
@@ -218,12 +235,28 @@ def get_bnpl_record_by_id(record_id):
         return {
             "id": row[0],
             "user_email": row[1],
-            "vendor": row[2],
-            "amount": row[3],
-            "installments": row[4],
-            "due_date": row[5],
-            "email_subject": row[6],
-            "status": row[7],
-            "created_at": row[8]
+            "gmail_message_id": row[2],
+            "vendor": row[3],
+            "amount": row[4],
+            "installments": row[5],
+            "due_date": row[6],
+            "email_subject": row[7],
+            "status": row[8],
+            "created_at": row[9]
         }
     return None
+
+def is_gmail_message_processed(user_email, gmail_message_id):
+    """Check if a Gmail message has already been processed for this user"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id FROM bnpl_records 
+        WHERE user_email = ? AND gmail_message_id = ?
+    """, (user_email, gmail_message_id))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    return row is not None
