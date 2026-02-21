@@ -10,11 +10,47 @@ CLIENT_SECRETS_FILE = "client_secret.json"
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 def create_flow():
-    return Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        redirect_uri="http://localhost:5000/auth/callback"
-    )
+    """
+    Create an OAuth2 Flow.
+    Priority:
+      1. Use GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from env (recommended for production).
+      2. Fallback to client_secret.json if present (local development).
+
+    Redirect URI is determined from BACKEND_URL env var if set, otherwise from the current request.url_root.
+    """
+    # Determine redirect URI
+    backend_base = os.getenv("BACKEND_URL")
+    if not backend_base:
+        # request.url_root will include a trailing slash
+        try:
+            from flask import request
+            backend_base = request.url_root.rstrip("/")
+        except Exception:
+            backend_base = "http://localhost:5000"
+
+    redirect_uri = f"{backend_base}/auth/callback"
+
+    # If client id/secret are provided via env, use them (avoid committing secrets)
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+
+    if client_id and client_secret:
+        client_config = {
+            "web": {
+                "client_id": client_id,
+                "project_id": os.getenv("GOOGLE_PROJECT_ID", "bnpl-guardian"),
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_secret": client_secret,
+                "redirect_uris": [redirect_uri]
+            }
+        }
+
+        return Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=redirect_uri)
+
+    # Fallback to client_secret.json for local dev
+    return Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=redirect_uri)
 
 
 def get_gmail_service(credentials):
