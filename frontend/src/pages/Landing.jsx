@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../api/axios'
@@ -15,6 +15,16 @@ function Landing() {
       })
       .catch(err => console.log('Not authenticated'))
   }, [navigate])
+
+  const [backendAvailable, setBackendAvailable] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    api.get('/api/health')
+      .then(() => mounted && setBackendAvailable(true))
+      .catch(() => mounted && setBackendAvailable(false))
+    return () => { mounted = false }
+  }, [])
 
   const getLoginUrl = () => {
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin)
@@ -107,16 +117,23 @@ function Landing() {
 
           {/* CTA Button */}
           <motion.div variants={itemVariants} className="pt-4">
+            {backendAvailable === false && (
+              <div className="max-w-xl mx-auto mb-4 p-3 rounded bg-[#2a2a2a] text-sm text-[#F5F5F5] border" style={{ borderColor: 'rgba(212,175,55,0.12)' }}>
+                Backend service is unavailable from this site. To use Gmail integration, deploy the backend and set `VITE_API_URL` in the production environment. See the repository README for quick deploy steps.
+              </div>
+            )}
+
             <button 
               onClick={handleLogin}
-              className="group px-8 py-3 bg-[#D4AF37] text-[#121212] font-semibold rounded text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(212,175,55,0.3)] hover:-translate-y-1 flex items-center gap-3 mx-auto"
+              disabled={backendAvailable === false}
+              className={`group px-8 py-3 ${backendAvailable === false ? 'bg-gray-600 text-gray-300 cursor-not-allowed' : 'bg-[#D4AF37] text-[#121212]'} font-semibold rounded text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(212,175,55,0.3)] hover:-translate-y-1 flex items-center gap-3 mx-auto`}
             >
               <img 
                 src="https://www.google.com/favicon.ico" 
                 alt="Google" 
                 className="w-5 h-5"
               />
-              <span>Connect with Gmail</span>
+              <span>{backendAvailable === false ? 'Connect unavailable' : 'Connect with Gmail'}</span>
             </button>
           </motion.div>
 

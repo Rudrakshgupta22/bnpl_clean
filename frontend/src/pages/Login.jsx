@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import '../styles/Login.css'
@@ -16,6 +16,16 @@ function Login() {
       })
       .catch(err => console.log('Not authenticated'))
   }, [navigate])
+
+  const [backendAvailable, setBackendAvailable] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    api.get('/api/health')
+      .then(() => mounted && setBackendAvailable(true))
+      .catch(() => mounted && setBackendAvailable(false))
+    return () => { mounted = false }
+  }, [])
 
   const getLoginUrl = () => {
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin)
@@ -53,14 +63,20 @@ function Login() {
           </div>
         </div>
 
-        <button className="login-btn" onClick={handleLogin}>
+        <button className="login-btn" onClick={handleLogin} disabled={backendAvailable === false}>
           <img 
             src="https://www.google.com/favicon.ico" 
             alt="Google" 
             className="google-icon"
           />
-          Connect with Gmail
+          {backendAvailable === false ? 'Connect unavailable' : 'Connect with Gmail'}
         </button>
+
+        {backendAvailable === false && (
+          <p className="privacy-note" style={{ color: '#FFD580' }}>
+            Backend not reachable from this site. Deploy the backend and set `VITE_API_URL` in production to enable Gmail integration.
+          </p>
+        )}
 
         <p className="privacy-note">
           We only read emails to detect BNPL transactions. Your data stays secure.
