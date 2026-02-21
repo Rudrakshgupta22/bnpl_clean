@@ -18,7 +18,18 @@ ENV/
 # Database
 *.db
 *.sqlite3
+database/*.db
 
 # IDE
 .vscode/
 .idea/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
