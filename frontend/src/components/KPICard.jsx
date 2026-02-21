@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import AnimatedCounter from './AnimatedCounter'
+import InfoIcon from './InfoIcon'
 
-function KPICard({ title, value, icon, prefix = '', suffix = '', color = 'gold' }) {
+function KPICard({ title, value, icon, prefix = '', suffix = '', color = 'gold', metric = '' }) {
   const colorMap = {
     gold: '#D4AF37',
     green: '#22C55E',
@@ -24,10 +25,13 @@ function KPICard({ title, value, icon, prefix = '', suffix = '', color = 'gold' 
       <div className="luxury-card p-6 transition-all duration-300 space-y-4" style={{ borderColor: 'rgba(212,175,55,0.2)' }}>
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[#A1A1AA] text-xs uppercase tracking-widest font-medium mb-2">
-              {title}
-            </p>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[#A1A1AA] text-xs uppercase tracking-widest font-medium">
+                {title}
+              </p>
+              {metric && <InfoIcon metric={metric} />}
+            </div>
             <div 
               className="text-3xl font-bold"
               style={{ color: accentColor }}

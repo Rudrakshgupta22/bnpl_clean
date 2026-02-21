@@ -14,7 +14,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:5173"])
+# Configure CORS origins from environment (comma-separated) so production frontend can be allowed
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+CORS(app, supports_credentials=True, origins=cors_origins)
+
+# Frontend URL for redirects (set in production to your GitHub Pages or deployed frontend)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.secret_key = os.getenv("SECRET_KEY", "default-secret-key-change-in-production")
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -417,13 +422,13 @@ def callback():
         profile = get_user_profile(user_email)
         if profile and profile.get("full_name"):
             # Existing user - go to dashboard
-            return redirect("http://localhost:3000/dashboard?auth=success")
+            return redirect(f"{FRONTEND_URL.rstrip('/')}/dashboard?auth=success")
         else:
             # New user - go to onboarding
-            return redirect("http://localhost:3000/onboarding?auth=success")
+            return redirect(f"{FRONTEND_URL.rstrip('/')}/onboarding?auth=success")
 
-    # Redirect to dashboard with success
-    return redirect("http://localhost:3000/dashboard?auth=success")
+    # Redirect to dashboard with success (fallback)
+    return redirect(f"{FRONTEND_URL.rstrip('/')}/dashboard?auth=success")
 
 
 @app.route("/api/fetch-emails")

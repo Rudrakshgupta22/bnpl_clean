@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import InfoIcon from './InfoIcon'
 
 function FinancialHealthSection({ profile, riskData, onProfileUpdate }) {
   const [simulatedSalary, setSimulatedSalary] = useState(profile?.salary || 30000)
@@ -52,25 +53,29 @@ function FinancialHealthSection({ profile, riskData, onProfileUpdate }) {
             label: 'Monthly Salary',
             value: simulatedSalary,
             color: '#D4AF37',
-            icon: '💰'
+            icon: '💰',
+            metric: 'salary'
           },
           {
             label: 'Fixed Expenses',
             value: simulatedRent + simulatedExpenses,
             color: '#A1A1AA',
-            icon: '🏠'
+            icon: '🏠',
+            metric: 'monthly_rent'
           },
           {
             label: 'BNPL Obligation',
             value: monthlyObligation,
             color: monthlyObligation > simulatedSalary * 0.3 ? '#DC2626' : '#F59E0B',
-            icon: '📋'
+            icon: '📋',
+            metric: 'monthly_emi'
           },
           {
             label: 'Disposable Income',
             value: Math.max(0, simulatedDisposable),
             color: simulatedDisposable > 10000 ? '#22C55E' : simulatedDisposable > 0 ? '#F59E0B' : '#DC2626',
-            icon: '🎯'
+            icon: '🎯',
+            metric: 'disposable_income'
           }
         ].map((item, idx) => (
           <motion.div
@@ -79,7 +84,10 @@ function FinancialHealthSection({ profile, riskData, onProfileUpdate }) {
             className="luxury-card p-6 border-[rgba(212,175,55,0.2)] space-y-2"
           >
             <div className="flex items-center justify-between">
-              <p className="text-[#A1A1AA] text-xs uppercase tracking-widest">{item.label}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[#A1A1AA] text-xs uppercase tracking-widest">{item.label}</p>
+                <InfoIcon metric={item.metric} />
+              </div>
               <span className="text-xl">{item.icon}</span>
             </div>
             <p 
@@ -100,9 +108,12 @@ function FinancialHealthSection({ profile, riskData, onProfileUpdate }) {
         variants={itemVariants}
         className="luxury-card p-8 border-[rgba(212,175,55,0.2)] space-y-8"
       >
-        <div>
-          <h3 className="text-2xl font-bold text-[#F5F5F5] mb-2">Financial Simulator</h3>
-          <p className="text-[#A1A1AA] text-sm">Adjust parameters to model different scenarios</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-[#F5F5F5] mb-2">Financial Simulator</h3>
+            <p className="text-[#A1A1AA] text-sm">Adjust parameters to model different scenarios</p>
+          </div>
+          <InfoIcon metric="disposable_income" />
         </div>
 
         {/* Sliders */}

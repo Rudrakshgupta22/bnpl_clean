@@ -22,8 +22,14 @@ function Login() {
     return `${apiUrl}/auth/login`
   }
 
-  const handleLogin = () => {
-    window.location.href = getLoginUrl()
+  const handleLogin = async () => {
+    const loginUrl = getLoginUrl()
+    try {
+      await api.get('/api/health')
+      window.location.href = loginUrl
+    } catch (e) {
+      window.alert('Backend service is unavailable from this site. Please try again later or contact the administrator.')
+    }
   }
 
   return (

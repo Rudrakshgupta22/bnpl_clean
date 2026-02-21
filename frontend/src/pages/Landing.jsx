@@ -21,8 +21,16 @@ function Landing() {
     return `${apiUrl}/auth/login`
   }
 
-  const handleLogin = () => {
-    window.location.href = getLoginUrl()
+  const handleLogin = async () => {
+    const loginUrl = getLoginUrl()
+    try {
+      // check backend health before redirecting (prevents redirecting to missing backend on GH Pages)
+      await api.get('/api/health')
+      window.location.href = loginUrl
+    } catch (e) {
+      // show a clear message instead of sending user to a dead backend
+      window.alert('Backend service is unavailable from this site. Please try again later or contact the administrator.')
+    }
   }
 
   const containerVariants = {

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import KPICard from './KPICard'
 import RiskGauge from './RiskGauge'
+import InfoIcon from './InfoIcon'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 function DashboardSection({ profile, riskData, records, affordability }) {
@@ -41,6 +42,7 @@ function DashboardSection({ profile, riskData, records, affordability }) {
           icon="💰"
           prefix="₹"
           color="gold"
+          metric="total_outstanding"
         />
         <KPICard
           title="Monthly EMI"
@@ -48,6 +50,7 @@ function DashboardSection({ profile, riskData, records, affordability }) {
           icon="📅"
           prefix="₹"
           color="amber"
+          metric="monthly_emi"
         />
         <KPICard
           title="Upcoming Dues"
@@ -55,6 +58,7 @@ function DashboardSection({ profile, riskData, records, affordability }) {
           icon="⏰"
           prefix="₹"
           color="purple"
+          metric="upcoming_dues"
         />
         <KPICard
           title="Risk Score"
@@ -62,6 +66,7 @@ function DashboardSection({ profile, riskData, records, affordability }) {
           icon="⚠️"
           suffix="/100"
           color={riskData.risk_score < 20 ? 'green' : riskData.risk_score < 50 ? 'amber' : 'red'}
+          metric="risk_score"
         />
       </div>
 
@@ -79,7 +84,10 @@ function DashboardSection({ profile, riskData, records, affordability }) {
             borderColor: getAffordabilityColor(affordability.status).border
           }}
         >
-          <h3 className="text-lg font-bold text-[#F5F5F5]">📊 Financial Affordability</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-[#F5F5F5]">📊 Financial Affordability</h3>
+            <InfoIcon metric="affordability_capacity" />
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
