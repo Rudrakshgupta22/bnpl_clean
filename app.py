@@ -9,11 +9,13 @@ from flask import redirect, session, request
 from backend.gmail_service import get_credentials_from_session
 from backend.gmail_service import fetch_bnpl_messages
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = "supersecret"
+app.secret_key = os.getenv("SECRET_KEY", "default-secret-key-change-in-production")
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
